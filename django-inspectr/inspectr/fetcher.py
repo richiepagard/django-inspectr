@@ -33,3 +33,24 @@ class DynamicModelFetcher:
     def __init__(self, payload: dict, model_map: dict):
         self.payload = payload
         self.model_map = model_map
+
+    def fetch_foreign_key(self, related_name: str) -> dict:
+        for model_key, filter_data in self.payload.items():
+            ModelKey = self.payload.get(model_key)
+            if not ModelKey:
+                # Skip if model not found
+                continue
+
+            # Extract primary keys and parameter names
+            PKs = filter_data.get("instances", [])
+            fields = filter_data.get("params", [])
+
+            # Build list of related field values
+            fields_values = [f"{related_name}__{field}" for field in fields]
+
+            # Query and extract values from related model fields
+            queryset = ModelKey.objects.filter(pk__in=PKs).values(*fields_values)
+
+            DATA[model_key] = list(queryset)
+
+        return DATA
